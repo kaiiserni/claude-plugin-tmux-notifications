@@ -49,12 +49,10 @@ ALERT_STYLE=$(get_option "@claude-notif-alert-style")
 ALERT_STYLE="${ALERT_STYLE:-bold}"
 
 is_user_watching() {
-    local now=$(date +%s)
-    local stale=30
-    while IFS=$'\t' read -r activity pane_id; do
+    while IFS=$'\t' read -r flags pane_id; do
         [ "$pane_id" != "$TMUX_PANE" ] && continue
-        [ $((now - activity)) -lt "$stale" ] && return 0
-    done < <(tmux list-clients -F '#{client_activity}	#{pane_id}' 2>/dev/null)
+        [[ "$flags" == *focused* ]] && return 0
+    done < <(tmux list-clients -F '#{client_flags}	#{pane_id}' 2>/dev/null)
     return 1
 }
 
