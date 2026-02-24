@@ -49,7 +49,19 @@ ALERT_STYLE=$(get_option "@claude-notif-alert-style")
 ALERT_STYLE="${ALERT_STYLE:-bold}"
 
 is_user_watching() {
-    tmux list-clients -F '#{pane_id}' 2>/dev/null | grep -q "^${TMUX_PANE}$"
+    local now=$(date +%s)
+    local stale=30
+    while IFS=$'\t' read -r activity pane_id; do
+        [ "$pane_id" != "$TMUX_PANE" ] && continue
+        [ $((now - activity)) -lt "$stale" ] && return 0
+    done < <(tmux list-clients -F '#{client_activity}	#{pane_id}' 2>/dev/null)
+    return 1
+}
+
+refresh_all_clients() {
+    tmux list-clients -F '#{client_name}' 2>/dev/null | while read -r c; do
+        tmux refresh-client -S -t "$c" 2>/dev/null
+    done
 }
 
 tmux_alert() {
@@ -63,7 +75,7 @@ tmux_alert() {
 
     echo "#[fg=${NOTIF_FG}][$TIMESTAMP] $label: #[fg=${ALERT_FG},${ALERT_STYLE}]$msg #[default]" > "$NOTIF_DIR/$NOTIF_KEY"
     echo "${TMUX_PANE}" > "$NOTIF_DIR/.pane_$NOTIF_KEY"
-    tmux refresh-client -S 2>/dev/null
+    refresh_all_clients
 }
 
 log_event() {
@@ -78,7 +90,7 @@ log_event() {
 
 tmux_clear_alert() {
     rm -f "$NOTIF_DIR/$NOTIF_KEY" "$NOTIF_DIR/.pane_$NOTIF_KEY"
-    tmux refresh-client -S 2>/dev/null
+    refresh_all_clients
 }
 
 case "$HOOK_EVENT" in
