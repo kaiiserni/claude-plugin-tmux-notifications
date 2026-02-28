@@ -49,10 +49,12 @@ ALERT_STYLE=$(get_option "@claude-notif-alert-style")
 ALERT_STYLE="${ALERT_STYLE:-bold}"
 
 is_user_watching() {
-    while IFS=$'\t' read -r flags pane_id; do
+    local now=$(date +%s)
+    while IFS=$'\t' read -r flags activity pane_id; do
         [ "$pane_id" != "$TMUX_PANE" ] && continue
-        [[ "$flags" == *focused* ]] && return 0
-    done < <(tmux list-clients -F '#{client_flags}	#{pane_id}' 2>/dev/null)
+        [[ "$flags" != *focused* ]] && continue
+        [ $((now - activity)) -lt 2 ] && return 0
+    done < <(tmux list-clients -F '#{client_flags}	#{client_activity}	#{pane_id}' 2>/dev/null)
     return 1
 }
 
@@ -102,6 +104,9 @@ case "$HOOK_EVENT" in
         MESSAGE=${MESSAGE//Claude/Agent}
         log_event "" "$MESSAGE"
         tmux_alert "$MESSAGE"
+        ;;
+    "PreToolUse")
+        is_user_watching && tmux_clear_alert
         ;;
     "UserPromptSubmit"|"SessionEnd")
         tmux_clear_alert
