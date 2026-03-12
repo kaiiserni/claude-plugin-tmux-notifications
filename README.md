@@ -1,61 +1,48 @@
 # tmux-agent-notifications (Claude Code Plugin)
 
-Per-project tmux status bar notifications for Claude Code agents. Each agent gets its own notification that only disappears when you focus that specific pane.
-
-## What This Plugin Does
-
-This Claude Code plugin automatically registers hooks for:
-- **Stop** - Notifies when an agent finishes
-- **Notification** - Shows agent messages that need attention
-- **UserPromptSubmit** - Clears notifications when you interact with an agent
-
-No manual `settings.json` editing required.
+Thin Claude Code hook wrapper for [tmux-claude-notifications](https://github.com/kaiiserni/tmux-claude-notifications). All notification logic lives in the tmux plugin — this plugin only registers hooks and forwards events.
 
 ## Requirements
 
 - tmux 3.2+
-- [tmux-agent-notifications](https://github.com/kaiiserni/tmux-agent-notifications) TPM plugin (for status bar display)
+- [tmux-claude-notifications](https://github.com/kaiiserni/tmux-claude-notifications) tmux plugin (installed via TPM)
 
 ## Installation
 
-```bash
-# Add the marketplace
-claude plugin marketplace add kaiiserni/claude-plugin-tmux-notifications
-
-# Install the plugin
-claude plugin install tmux-agent-notifications@claude-plugin-tmux-notifications
-```
-
-Then install the companion tmux plugin for status bar display. Add to `~/.tmux.conf`:
+**1. Install the tmux plugin first** — add to `~/.tmux.conf`:
 
 ```tmux
-set -g @plugin 'kaiiserni/tmux-agent-notifications'
+set -g @plugin 'kaiiserni/tmux-claude-notifications'
 ```
 
 Reload tmux: `prefix + I`
 
+**2. Install this Claude Code plugin:**
+
+```bash
+claude plugin marketplace add kaiiserni/claude-plugin-tmux-notifications
+claude plugin install tmux-agent-notifications@claude-plugin-tmux-notifications
+```
+
 > Restart Claude Code after installing for hooks to activate.
+
+## Registered Hooks
+
+| Event | Description |
+|---|---|
+| Stop | Agent finished |
+| Notification | Agent needs attention |
+| PreToolUse | Clears alert if user is watching |
+| UserPromptSubmit | Clears alert |
+| SessionEnd | Clears alert |
 
 ## How It Works
 
-```
-Claude Code hooks (this plugin)     tmux plugin
-         |                              |
-    Stop/Notification             status line display
-         |                         keybindings
-         v                         auto-clearing
-  ~/.claude/.notifications/
-    ProjectA__42
-    ProjectB__53
-```
-
-1. This plugin catches Claude Code events and writes notification files
-2. The tmux plugin reads those files and displays them in the status bar
-3. Notifications clear automatically when you focus the agent's pane
+This plugin registers Claude Code hooks that forward events to the tmux plugin's `claude-hook.sh` script. The tmux plugin handles all notification display, status bar integration, and alert clearing.
 
 ## Configuration
 
-Display settings are configured via tmux `@` variables in `~/.tmux.conf` (see the [tmux plugin README](https://github.com/kaiiserni/tmux-agent-notifications)).
+All display settings are configured via tmux `@` variables — see the [tmux plugin README](https://github.com/kaiiserni/tmux-claude-notifications).
 
 ## Uninstall
 

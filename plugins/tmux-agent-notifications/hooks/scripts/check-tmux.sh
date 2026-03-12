@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
-
-# Not in tmux? Skip
 [ -z "$TMUX" ] && exit 0
 
-# Check if tmux plugin is active (notification-reader in status line)
-if ! tmux show-option -gqv status-format[1] 2>/dev/null | grep -q "notification-reader"; then
-    echo "tmux-agent-notifications: tmux plugin not detected. Install via TPM: set -g @plugin 'kaiiserni/tmux-agent-notifications'" >&2
+FOUND=0
+for dir in \
+    "$HOME/.tmux/plugins/tmux-claude-notifications" \
+    "$HOME/.tmux/plugins/tmux-agent-notifications"; do
+    [ -d "$dir" ] && FOUND=1 && break
+done
+
+if [ "$FOUND" -eq 0 ]; then
+    echo "tmux-agent-notifications: tmux plugin not installed. Add to .tmux.conf:" >&2
+    echo "  set -g @plugin 'kaiiserni/tmux-claude-notifications'" >&2
 fi
 
 exit 0
